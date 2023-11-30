@@ -7,13 +7,28 @@ This is an unofficial fork of [IFEval](https://github.com/josejg/google-research
 
 ### Install 
 
-To install IFEval you
+You can install **instruction_following_eval** with `pip` directly
 
 ```shell
-pip install ???
+pip install git+https://github.com/josejg/instruction_following_eval.git
+```
+
+or manually cloning it:
+
+```shell
+git clone https://github.com/josejg/instruction_following_eval.git
+cd instruction_following_eval
+pip install . 
 ```
 
 ### Running IFEval
 
 TODO
 
+
+### Tests
+
+```shell
+$ python test/instructions_test.py
+$ python test/instructions_util_test.py
+```
