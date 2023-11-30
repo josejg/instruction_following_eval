@@ -32,6 +32,11 @@ requires-python = ">=3.9"
 Homepage = "https://github.com/josejg/instruction_following_eval"
 Repository = "https://github.com/josejg/instruction_following_eval"
 
+
+[tool.setuptools.package-data]
+instruction_following_eval = ["data/*"]
+
+
 # [project.scripts]
 # realpython = "reader.__main__:main"
 
