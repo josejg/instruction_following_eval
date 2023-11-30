@@ -38,7 +38,7 @@ To run instruction following eval in your codebase you just need to import `inst
 }
 ```
 
-However, you can retrieve the list of examples of the [original paper](https://arxiv.org/abs/2311.07911) by calling `default_examples`.
+However, you can retrieve the list from examples of the [original paper](https://arxiv.org/abs/2311.07911) by calling `default_examples`.
 
 ```python 
 from instruction_following_eval import default_examples, instruction_following_eval

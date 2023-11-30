@@ -57,11 +57,11 @@ class InstructionEval:
         for instruction, follow in zip(
             self.instruction_id_list, self.follow_instruction_list
         ):
-            group, task = instruction.split(":")
+            group, category = instruction.split(":")
             logs.append(
                 {
                     "group": group,
-                    "task": task,
+                    "category": category,
                     "follow": follow,
                 }
             )
@@ -75,8 +75,8 @@ Logs = list[dict[str, Any]]
 def instruction_following_eval(
     examples: list[InstructionResult],
     strict: bool = True,
-    aggregate: Literal["all", "task", "no"] = "all",
-) -> Union[float, Logs]:
+    aggregate: bool = True,
+) -> Union[dict[str, float], Logs]:
     eval_fn = {
         True: test_instruction_following_strict,
         False: test_instruction_following_loose,
@@ -84,21 +84,20 @@ def instruction_following_eval(
 
     logs = sum((eval_fn(example).as_logs() for example in examples), start=[])
 
-    if aggregate == "no":
+    if not aggregate:
         return logs
 
     results = pd.DataFrame.from_records(logs)
-    by_task = results.groupby(["group", "task"], as_index=False).follow.mean()
-    if aggregate == "task":
-        return by_task
-    by_group = by_task.groupby(["group"], as_index=False).follow.mean()
-    acc = by_group.follow.mean()
-    return acc
+    by_category = results.groupby(["group", "category"], as_index=False).follow.mean()
+    acc_dict = by_category.set_index('category').follow.to_dict()
+    by_group = by_category.groupby(["group"], as_index=False).follow.mean()
+    acc_dict['average'] = by_group.follow.mean()
+    return acc_dict
 
 
 @validate_call
 def test_instruction_following_strict(example: InstructionResult) -> InstructionEval:
-    """Tests response to see if instrutions are followed."""
+    """Tests response to see if instructions are followed."""
     response = example.response
     instruction_list = example.instruction_id_list
     is_following_list = []
