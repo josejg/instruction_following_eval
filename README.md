@@ -23,7 +23,35 @@ pip install .
 
 ### Running IFEval
 
-TODO
+To run instruction following eval in your codebase you just need to import `instruction_following_eval` and provide a list of examples encoded as dictionaries with the following structure:
+
+```python
+# Example test
+{
+ 'key': 1001,
+ 'instruction_id_list': ['punctuation:no_comma'],
+ 'prompt': 'I am planning a trip to Japan, and I would like thee to write an '
+           'itinerary for my journey in a Shakespearean style. You are not '
+           'allowed to use any commas in your response.',
+ 'kwargs': [{}],
+ 'response': '<MODEL RESPONSE>'
+}
+```
+
+However, you can retrieve the list of examples of the [original paper](https://arxiv.org/abs/2311.07911) by calling `default_examples`.
+
+```python 
+from instruction_following_eval import default_examples, instruction_following_eval
+
+examples = default_examples()
+
+for example in examples:
+    example['response'] = model.generate(example['prompt'])
+
+accuracy = instruction_following_eval(examples)
+
+print(accuracy)
+```
 
 
 ### Tests
