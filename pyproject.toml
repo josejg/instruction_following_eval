@@ -36,8 +36,6 @@ Repository = "https://github.com/josejg/instruction_following_eval"
 [tool.setuptools.package-data]
 instruction_following_eval = ["data/*"]
 
-[tool.setup_nltk]
-script = "setup_nltk.py"
 
 # [project.scripts]
 # realpython = "reader.__main__:main"
