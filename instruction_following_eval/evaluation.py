@@ -17,7 +17,6 @@ import json
 from importlib import resources
 
 import pandas as pd
-from pydantic import validate_call
 
 from . import instructions_registry
 
@@ -71,7 +70,6 @@ class InstructionEval:
 Logs = list[dict[str, Any]]
 
 
-@validate_call
 def instruction_following_eval(
     examples: list[InstructionResult],
     strict: bool = True,
@@ -95,7 +93,6 @@ def instruction_following_eval(
     return acc_dict
 
 
-@validate_call
 def test_instruction_following_strict(example: InstructionResult) -> InstructionEval:
     """Tests response to see if instructions are followed."""
     response = example.response
@@ -125,7 +122,6 @@ def test_instruction_following_strict(example: InstructionResult) -> Instruction
     )
 
 
-@validate_call
 def test_instruction_following_loose(example: InstructionResult) -> InstructionEval:
     """Tests response for an upper bound for following instructions."""
     response = example.response
