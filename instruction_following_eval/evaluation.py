@@ -45,6 +45,7 @@ class InstructionResult:
 
 @dataclasses.dataclass
 class InstructionEval:
+    key: int
     instruction_id_list: list[str]
     prompt: str
     response: str
@@ -59,6 +60,7 @@ class InstructionEval:
             group, category = instruction.split(":")
             logs.append(
                 {
+                    "key": self.key,
                     "group": group,
                     "category": category,
                     "follow": follow,
@@ -71,26 +73,22 @@ Logs = list[dict[str, Any]]
 
 
 def instruction_following_eval(
-    examples: list[InstructionResult],
+    examples: list[dict[str, Any]],
     strict: bool = True,
-    aggregate: bool = True,
-) -> Union[dict[str, float], Logs]:
+) -> tuple[dict[str, float], Logs]:
     eval_fn = {
         True: test_instruction_following_strict,
         False: test_instruction_following_loose,
     }[strict]
-
-    logs = sum((eval_fn(example).as_logs() for example in examples), start=[])
-
-    if not aggregate:
-        return logs
+    fmt_examples = [InstructionResult(**example) for example in examples]
+    logs = sum((eval_fn(example).as_logs() for example in fmt_examples), start=[])
 
     results = pd.DataFrame.from_records(logs)
     by_category = results.groupby(["group", "category"], as_index=False).follow.mean()
     acc_dict = by_category.set_index('category').follow.to_dict()
     by_group = by_category.groupby(["group"], as_index=False).follow.mean()
     acc_dict['average'] = by_group.follow.mean()
-    return acc_dict
+    return acc_dict, results.to_dict(orient="records")
 
 
 def test_instruction_following_strict(example: InstructionResult) -> InstructionEval:
@@ -114,6 +112,7 @@ def test_instruction_following_strict(example: InstructionResult) -> Instruction
             is_following_list.append(False)
 
     return InstructionEval(
+        key=example.key,
         instruction_id_list=example.instruction_id_list,
         prompt=example.prompt,
         response=response,
@@ -164,6 +163,7 @@ def test_instruction_following_loose(example: InstructionResult) -> InstructionE
         is_following_list.append(is_following)
 
     return InstructionEval(
+        key=example.key,
         instruction_id_list=example.instruction_id_list,
         prompt=example.prompt,
         response=response,
