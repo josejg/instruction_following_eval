@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2023 The Google Research Authors.
+# Copyright 2024 The Google Research Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,18 +14,21 @@
 # limitations under the License.
 
 """Library of instructions."""
+
 import collections
 import json
 import random
 import re
 import string
 from typing import Dict, Optional, Sequence, Union
+import logging
 
 import langdetect
 
-# from absl import logging
-
 from instruction_following_eval import instructions_util
+
+log = logging.getLogger(__name__)
+
 
 _InstructionArgsDtype = Optional[Dict[str, Union[int, str, Sequence[str]]]]
 
@@ -173,7 +176,7 @@ class ResponseLanguageChecker(Instruction):
             return langdetect.detect(value) == self._language
         except langdetect.LangDetectException as e:
             # Count as instruction is followed.
-            print(
+            log.error(
                 "Unable to detect language for text %s due to %s", value, e
             )  # refex: disable=pytotw.037
             return True
@@ -1460,7 +1463,7 @@ class CapitalLettersEnglishChecker(Instruction):
             return value.isupper() and langdetect.detect(value) == "en"
         except langdetect.LangDetectException as e:
             # Count as instruction is followed.
-            print(
+            log.error(
                 "Unable to detect language for text %s due to %s", value, e
             )  # refex: disable=pytotw.037
             return True
@@ -1492,7 +1495,7 @@ class LowercaseLettersEnglishChecker(Instruction):
             return value.islower() and langdetect.detect(value) == "en"
         except langdetect.LangDetectException as e:
             # Count as instruction is followed.
-            print(
+            log.error(
                 "Unable to detect language for text %s due to %s", value, e
             )  # refex: disable=pytotw.037
             return True

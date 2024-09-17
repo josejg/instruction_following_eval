@@ -12,7 +12,7 @@
 # limitations under the License.
 
 import dataclasses
-from typing import Union, Any, Literal
+from typing import Union, Any
 import json
 from importlib import resources
 
@@ -87,9 +87,9 @@ def instruction_following_eval(
 
     results = pd.DataFrame.from_records(logs)
     by_category = results.groupby(["group", "category"], as_index=False).follow.mean()
-    acc_dict = by_category.set_index('category').follow.to_dict()
+    acc_dict = by_category.set_index("category").follow.to_dict()
     by_group = by_category.groupby(["group"], as_index=False).follow.mean()
-    acc_dict['average'] = by_group.follow.mean()
+    acc_dict["average"] = by_group.follow.mean()
     return acc_dict
 
 
