@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "instruction_following_eval"
-version = "0.0.1"
+version = "0.1.0"
 description = "Instruction Following Eval"
 authors = [{ name = "Jose Javier Gonzalez Ortiz"}]
 license = { file = "LICENSE" }
@@ -20,6 +20,7 @@ dependencies = [
     "langdetect",
     "nltk",
     "pandas",
+    "typer",
 ]
 
 # [project.optional-dependencies]

@@ -14,6 +14,7 @@
 # limitations under the License.
 
 """Registry of all instructions."""
+
 from instruction_following_eval import instructions
 
 _KEYWORD = "keywords:"
@@ -54,8 +55,7 @@ INSTRUCTION_DICT = {
     # TODO(jeffreyzhou): Pre-create paragraph or use prompt to replace
     # _CONTENT + "rephrase_paragraph": instructions.RephraseParagraph,
     _FORMAT + "constrained_response": instructions.ConstrainedResponseChecker,
-    _FORMAT + "number_highlighted_sections": (
-        instructions.HighlightSectionChecker),
+    _FORMAT + "number_highlighted_sections": (instructions.HighlightSectionChecker),
     _FORMAT + "multiple_sections": instructions.SectionChecker,
     # TODO(tianjianlu): Re-enable rephrasing with preprocessing the message.
     # _FORMAT + "rephrase": instructions.RephraseChecker,
@@ -66,12 +66,9 @@ INSTRUCTION_DICT = {
     _COMBINATION + "two_responses": instructions.TwoResponsesChecker,
     _COMBINATION + "repeat_prompt": instructions.RepeatPromptThenAnswer,
     _STARTEND + "end_checker": instructions.EndChecker,
-    _CHANGE_CASES
-    + "capital_word_frequency": instructions.CapitalWordFrequencyChecker,
-    _CHANGE_CASES
-    + "english_capital": instructions.CapitalLettersEnglishChecker,
-    _CHANGE_CASES
-    + "english_lowercase": instructions.LowercaseLettersEnglishChecker,
+    _CHANGE_CASES + "capital_word_frequency": instructions.CapitalWordFrequencyChecker,
+    _CHANGE_CASES + "english_capital": instructions.CapitalLettersEnglishChecker,
+    _CHANGE_CASES + "english_lowercase": instructions.LowercaseLettersEnglishChecker,
     _PUNCTUATION + "no_comma": instructions.CommaChecker,
     _STARTEND + "quotation": instructions.QuotationChecker,
 }
@@ -83,8 +80,7 @@ INSTRUCTION_CONFLICTS = {
     # _KEYWORD + "key_sentences": instructions.KeySentenceChecker,
     _KEYWORD + "forbidden_words": {_KEYWORD + "forbidden_words"},
     _KEYWORD + "letter_frequency": {_KEYWORD + "letter_frequency"},
-    _LANGUAGE
-    + "response_language": {
+    _LANGUAGE + "response_language": {
         _LANGUAGE + "response_language",
         _FORMAT + "multiple_sections",
         _KEYWORD + "existence",
@@ -112,36 +108,32 @@ INSTRUCTION_CONFLICTS = {
     # TODO(jeffreyzhou): Pre-create paragraph or use prompt to replace
     # _CONTENT + "rephrase_paragraph": instructions.RephraseParagraph,
     _FORMAT + "constrained_response": set(INSTRUCTION_DICT.keys()),
-    _FORMAT
-    + "number_highlighted_sections": {_FORMAT + "number_highlighted_sections"},
-    _FORMAT
-    + "multiple_sections": {
+    _FORMAT + "number_highlighted_sections": {_FORMAT + "number_highlighted_sections"},
+    _FORMAT + "multiple_sections": {
         _FORMAT + "multiple_sections",
         _LANGUAGE + "response_language",
         _FORMAT + "number_highlighted_sections",
     },
     # TODO(tianjianlu): Re-enable rephrasing with preprocessing the message.
     # _FORMAT + "rephrase": instructions.RephraseChecker,
-    _FORMAT
-    + "json_format": set(INSTRUCTION_DICT.keys()).difference(
+    _FORMAT + "json_format": set(INSTRUCTION_DICT.keys()).difference(
         {_KEYWORD + "forbidden_words", _KEYWORD + "existence"}
     ),
     _FORMAT + "title": {_FORMAT + "title"},
     # TODO(tianjianlu): Re-enable with specific prompts.
     # _MULTITURN + "constrained_start": instructions.ConstrainedStartChecker,
-    _COMBINATION
-    + "two_responses": set(INSTRUCTION_DICT.keys()).difference({
-        _KEYWORD + "forbidden_words",
-        _KEYWORD + "existence",
-        _LANGUAGE + "response_language",
-        _FORMAT + "title",
-        _PUNCTUATION + "no_comma"
-    }),
-    _COMBINATION + "repeat_prompt": set(INSTRUCTION_DICT.keys()).difference({
-        _KEYWORD + "existence",
-        _FORMAT + "title",
-        _PUNCTUATION + "no_comma"
-    }),
+    _COMBINATION + "two_responses": set(INSTRUCTION_DICT.keys()).difference(
+        {
+            _KEYWORD + "forbidden_words",
+            _KEYWORD + "existence",
+            _LANGUAGE + "response_language",
+            _FORMAT + "title",
+            _PUNCTUATION + "no_comma",
+        }
+    ),
+    _COMBINATION + "repeat_prompt": set(INSTRUCTION_DICT.keys()).difference(
+        {_KEYWORD + "existence", _FORMAT + "title", _PUNCTUATION + "no_comma"}
+    ),
     _STARTEND + "end_checker": {_STARTEND + "end_checker"},
     _CHANGE_CASES + "capital_word_frequency": {
         _CHANGE_CASES + "capital_word_frequency",
@@ -159,18 +151,18 @@ INSTRUCTION_CONFLICTS = {
 
 
 def conflict_make(conflicts):
-  """Makes sure if A conflicts with B, B will conflict with A.
+    """Makes sure if A conflicts with B, B will conflict with A.
 
-  Args:
-    conflicts: Dictionary of potential conflicts where key is instruction id
-      and value is set of instruction ids that it conflicts with.
+    Args:
+      conflicts: Dictionary of potential conflicts where key is instruction id
+        and value is set of instruction ids that it conflicts with.
 
-  Returns:
-    Revised version of the dictionary. All instructions conflict with
-    themselves. If A conflicts with B, B will conflict with A.
-  """
-  for key in conflicts:
-    for k in conflicts[key]:
-      conflicts[k].add(key)
-    conflicts[key].add(key)
-  return conflicts
+    Returns:
+      Revised version of the dictionary. All instructions conflict with
+      themselves. If A conflicts with B, B will conflict with A.
+    """
+    for key in conflicts:
+        for k in conflicts[key]:
+            conflicts[k].add(key)
+        conflicts[key].add(key)
+    return conflicts

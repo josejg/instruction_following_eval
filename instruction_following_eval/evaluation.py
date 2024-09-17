@@ -1,152 +1,81 @@
-# coding=utf-8
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import dataclasses
-from typing import Union, Any
 import json
+import os
+from typing import Dict, List, Union, Any
 from importlib import resources
 
-import pandas as pd
 
-from . import instructions_registry
+import typer
+from rich import print
 
+from instruction_following_eval import instructions_registry
 
-def default_examples():
-    inputs = []
-    data_path = resources.files("instruction_following_eval") / "data/input_data.jsonl"
-    with data_path.open("r") as f:
-        for line in f:
-            example = json.loads(line)
-            # TODO: fix this
-            if "combination:repeat_prompt" in example["instruction_id_list"]:
-                continue
-            inputs.append(example)
-    return inputs
+DEFAULT_FILE = resources.files("instruction_following_eval") / "data/input_data.jsonl"
+
 
 
 @dataclasses.dataclass
-class InstructionResult:
+class InputExample:
     key: int
-    instruction_id_list: list[str]
+    instruction_id_list: List[str]
     prompt: str
-    response: str
-    kwargs: list[dict[str, Any]]
-
+    kwargs: List[Dict[str, Any]]
 
 @dataclasses.dataclass
-class InstructionEval:
-    instruction_id_list: list[str]
+class OutputExample:
+    instruction_id_list: List[str]
     prompt: str
     response: str
     follow_all_instructions: bool
-    follow_instruction_list: list[bool]
+    follow_instruction_list: List[bool]
 
-    def as_logs(self):
-        logs = []
-        for instruction, follow in zip(
-            self.instruction_id_list, self.follow_instruction_list
-        ):
-            group, category = instruction.split(":")
-            logs.append(
-                {
-                    "group": group,
-                    "category": category,
-                    "follow": follow,
-                }
-            )
-        return logs
+def mean(numbers: List[float]) -> float:
+    """Calculate the mean of a list of numbers."""
+    return sum(numbers) / len(numbers) if numbers else 0.0
 
+def instruction_mean(results: List[OutputExample]) -> float:
+    """Calculate the mean accuracy across all instructions."""
+    all_instructions = [inst for result in results for inst in result.follow_instruction_list]
+    return mean(all_instructions)
 
-Logs = list[dict[str, Any]]
+def get_examples(input_jsonl_filename: str = DEFAULT_FILE) -> List[Dict[str, Any]]:
+    """Read inputs from jsonl."""
+    inputs = []
+    with open(input_jsonl_filename, "r") as f:
+        for l in f:
+            example = json.loads(l)
+            inputs.append(example)
+    return inputs
 
-
-def instruction_following_eval(
-    examples: list[InstructionResult],
-    strict: bool = True,
-    aggregate: bool = True,
-) -> Union[dict[str, float], Logs]:
-    eval_fn = {
-        True: test_instruction_following_strict,
-        False: test_instruction_following_loose,
-    }[strict]
-
-    logs = sum((eval_fn(example).as_logs() for example in examples), start=[])
-
-    if not aggregate:
-        return logs
-
-    results = pd.DataFrame.from_records(logs)
-    by_category = results.groupby(["group", "category"], as_index=False).follow.mean()
-    acc_dict = by_category.set_index("category").follow.to_dict()
-    by_group = by_category.groupby(["group"], as_index=False).follow.mean()
-    acc_dict["average"] = by_group.follow.mean()
-    return acc_dict
-
-
-def test_instruction_following_strict(example: InstructionResult) -> InstructionEval:
-    """Tests response to see if instructions are followed."""
-    response = example.response
-    instruction_list = example.instruction_id_list
-    is_following_list = []
-
-    for index, instruction_id in enumerate(instruction_list):
-        instruction_cls = instructions_registry.INSTRUCTION_DICT[instruction_id]
-        instruction = instruction_cls(instruction_id)
-
-        instruction.build_description(**example.kwargs[index])
-        args = instruction.get_instruction_args()
-        if args and "prompt" in args:
-            instruction.build_description(prompt=example.prompt)
-
-        if response.strip() and instruction.check_following(response):
-            is_following_list.append(True)
-        else:
-            is_following_list.append(False)
-
-    return InstructionEval(
-        instruction_id_list=example.instruction_id_list,
-        prompt=example.prompt,
-        response=response,
-        follow_all_instructions=all(is_following_list),
-        follow_instruction_list=is_following_list,
+def dict_to_input_example(example: Dict[str, Any]) -> InputExample:
+    """Convert a dictionary to an InputExample."""
+    return InputExample(
+        key=example["key"],
+        instruction_id_list=example["instruction_id_list"],
+        prompt=example["prompt"],
+        kwargs=example["kwargs"]
     )
 
+def test_instruction_following(example: Union[Dict[str, Any], InputExample], response: str, strict: bool = True) -> OutputExample:
+    """Tests response to see if instructions are followed."""
+    if isinstance(example, dict):
+        example = dict_to_input_example(example)
 
-def test_instruction_following_loose(example: InstructionResult) -> InstructionEval:
-    """Tests response for an upper bound for following instructions."""
-    response = example.response
-    r = response.split("\n")
-    response_remove_first = "\n".join(r[1:]).strip()
-    response_remove_last = "\n".join(r[:-1]).strip()
-    response_remove_both = "\n".join(r[1:-1]).strip()
-    revised_response = response.replace("*", "")
-    revised_response_remove_first = response_remove_first.replace("*", "")
-    revised_response_remove_last = response_remove_last.replace("*", "")
-    revised_response_remove_both = response_remove_both.replace("*", "")
-    all_responses = [
-        response,
-        revised_response,
-        response_remove_first,
-        response_remove_last,
-        response_remove_both,
-        revised_response_remove_first,
-        revised_response_remove_last,
-        revised_response_remove_both,
-    ]
-    instruction_list = example.instruction_id_list
     is_following_list = []
 
-    for index, instruction_id in enumerate(instruction_list):
+    if not strict:
+        responses = [
+            response,
+            response.replace("*", ""),
+            "\n".join(response.split("\n")[1:]).strip(),
+            "\n".join(response.split("\n")[:-1]).strip(),
+            "\n".join(response.split("\n")[1:-1]).strip(),
+        ]
+        responses += [r.replace("*", "") for r in responses[2:]]
+    else:
+        responses = [response]
+
+    for index, instruction_id in enumerate(example.instruction_id_list):
         instruction_cls = instructions_registry.INSTRUCTION_DICT[instruction_id]
         instruction = instruction_cls(instruction_id)
 
@@ -155,18 +84,59 @@ def test_instruction_following_loose(example: InstructionResult) -> InstructionE
         if args and "prompt" in args:
             instruction.build_description(prompt=example.prompt)
 
-        is_following = False
-        for r in all_responses:
-            if r.strip() and instruction.check_following(r):
-                is_following = True
-                break
-
+        is_following = any(r.strip() and instruction.check_following(r) for r in responses)
         is_following_list.append(is_following)
 
-    return InstructionEval(
+    return OutputExample(
         instruction_id_list=example.instruction_id_list,
         prompt=example.prompt,
         response=response,
         follow_all_instructions=all(is_following_list),
         follow_instruction_list=is_following_list,
     )
+
+def evaluate_instruction_following(examples: List[Dict[str, Any]], responses: List[str]) -> Dict[str, float]:
+    if len(examples) != len(responses):
+        raise ValueError("The number of examples and responses must be the same.")
+
+    input_examples = [dict_to_input_example(ex) for ex in examples]
+    strict_results = [test_instruction_following(ex, resp, strict=True) for ex, resp in zip(input_examples, responses)]
+    loose_results = [test_instruction_following(ex, resp, strict=False) for ex, resp in zip(input_examples, responses)]
+
+    return {
+        "prompt_level_strict_accuracy": mean([r.follow_all_instructions for r in strict_results]),
+        "inst_level_strict_accuracy": instruction_mean(strict_results),
+        "prompt_level_loose_accuracy": mean([r.follow_all_instructions for r in loose_results]),
+        "inst_level_loose_accuracy": instruction_mean(loose_results),
+    }
+
+def print_report(results: Dict[str, float]):
+    """Prints a report on accuracy scores."""
+    print("Evaluation Results:")
+    for key, value in results.items():
+        print(f"{key}: {value:.4f}")
+
+def main(
+    input_data: str = typer.Option(..., help="Path to input data"),
+    input_response_data: str = typer.Option(..., help="Path to input response data"),
+    output_dir: str = typer.Option(..., help="Output directory for inference and eval results")
+):
+    examples = get_examples(input_data)
+    
+    # Read responses
+    with open(input_response_data, "r") as f:
+        responses = [json.loads(line)["response"] for line in f]
+
+    results = evaluate_instruction_following(examples, responses)
+
+    # Print the report
+    print_report(results)
+
+    # Save results to a file
+    output_file = os.path.join(output_dir, "evaluation_results.json")
+    with open(output_file, "w") as f:
+        json.dump(results, f, indent=2)
+    print(f"Results saved to: {output_file}")
+
+if __name__ == "__main__":
+    typer.run(main)

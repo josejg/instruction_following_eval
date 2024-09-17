@@ -1,6 +1,6 @@
-__all__ = ["default_examples", "instruction_following_eval"]
+__all__ = ["get_examples", "evaluate_instruction_following"]
 
-from .evaluation import default_examples, instruction_following_eval
+from .evaluation import get_examples, evaluate_instruction_following
 
 
 def ensure_nltk_resource():
