@@ -19,3 +19,4 @@ def ensure_nltk_resource():
 
 # Ensure NLTK resource is available before proceeding
 ensure_nltk_resource()
+nltk.download('punkt_tab')
