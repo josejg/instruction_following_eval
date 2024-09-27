@@ -15,6 +15,7 @@ def ensure_nltk_resource():
         # If exception is raised, it means 'punkt' is not available
         # Download 'punkt'
         nltk.download("punkt")
+    nltk.download('punkt_tab')
 
 
 # Ensure NLTK resource is available before proceeding
