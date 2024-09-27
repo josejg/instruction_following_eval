@@ -95,6 +95,8 @@ def instruction_following_eval(
 
 def test_instruction_following_strict(example: InstructionResult) -> InstructionEval:
     """Tests response to see if instructions are followed."""
+    if isinstance(example, dict):
+        example = InstructionResult(**example)
     response = example.response
     instruction_list = example.instruction_id_list
     is_following_list = []
@@ -124,6 +126,8 @@ def test_instruction_following_strict(example: InstructionResult) -> Instruction
 
 def test_instruction_following_loose(example: InstructionResult) -> InstructionEval:
     """Tests response for an upper bound for following instructions."""
+    if isinstance(example, dict):
+        example = InstructionResult(**example)
     response = example.response
     r = response.split("\n")
     response_remove_first = "\n".join(r[1:]).strip()
