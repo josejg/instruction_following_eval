@@ -41,16 +41,16 @@ To run instruction following eval in your codebase you just need to import `inst
 However, you can retrieve the list from examples of the [original paper](https://arxiv.org/abs/2311.07911) by calling `default_examples`.
 
 ```python 
-from instruction_following_eval import default_examples, instruction_following_eval
+from instruction_following_eval import get_examples, evaluate_instruction_following
 
-examples = default_examples()
+examples = get_examples()
 
 for example in examples:
     example['response'] = model.generate(example['prompt'])
 
-accuracy = instruction_following_eval(examples)
+metrics = evaluate_instruction_following(examples)
 
-print(accuracy)
+print(metrics)
 ```
 
 
