@@ -31,6 +31,8 @@ def ensure_nltk_resource():
         nltk.data.find('tokenizers/punkt_tab', paths=[nltk_data_dir])
     except LookupError:
         nltk.download('punkt_tab', quiet=True, download_dir=nltk_data_dir)
+        
+    nltk.data.path.append(nltk_data_dir)
 
 @dataclasses.dataclass
 class InputExample:
