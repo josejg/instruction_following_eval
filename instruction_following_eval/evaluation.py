@@ -13,6 +13,24 @@ from instruction_following_eval import instructions_registry
 DEFAULT_FILE = resources.files("instruction_following_eval") / "data/input_data.jsonl"
 
 
+def ensure_nltk_resource():
+    import nltk
+    import pathlib
+
+    # Set up NLTK data directory in user's cache
+    nltk_data_dir = str((pathlib.Path.home() / '.cache/nltk_data').absolute())
+
+    # Handle punkt resource
+    try:
+        nltk.data.find('tokenizers/punkt', paths=[nltk_data_dir])
+    except LookupError:
+        nltk.download('punkt', quiet=True, download_dir=nltk_data_dir)
+
+    # Handle punkt_tab resource
+    try:
+        nltk.data.find('tokenizers/punkt_tab', paths=[nltk_data_dir])
+    except LookupError:
+        nltk.download('punkt_tab', quiet=True, download_dir=nltk_data_dir)
 
 @dataclasses.dataclass
 class InputExample:
@@ -96,6 +114,9 @@ def test_instruction_following(example: Union[Dict[str, Any], InputExample], res
     )
 
 def evaluate_instruction_following(examples: List[Dict[str, Any]], responses: List[str]) -> Dict[str, float]:
+    # Ensure NLTK resource is available before proceeding
+    ensure_nltk_resource()
+    
     if len(examples) != len(responses):
         raise ValueError("The number of examples and responses must be the same.")
 
